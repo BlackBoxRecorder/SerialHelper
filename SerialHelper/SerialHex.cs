@@ -27,9 +27,16 @@ namespace SerialHelper
         public Parity Parity { get; set; }
         public int DataBits { get; set; }
         public StopBits StopBits { get; set; }
-        public int ReadTimeout { get; set; }
-        public int WriteTimeout { get; set; }
-        public int Timeout { get; set; }
+        public int ReadTimeout { get; set; } = 3000;
+        public int WriteTimeout { get; set; } = 3000;
+
+        /// <summary>
+        /// 命令超时时间
+        /// </summary>
+        public int Timeout { get; set; } = 5000;
+        public int ReadBufferSize { get; set; } = 8192;
+        public int WriteBufferSize { get; set; } = 8192;
+
         #endregion
 
         #region Public
@@ -45,8 +52,10 @@ namespace SerialHelper
                 serial.Parity = Parity;
                 serial.DataBits = DataBits;
                 serial.StopBits = StopBits;
-                serial.ReadTimeout = 2000;
-                serial.WriteTimeout = 1000;
+                serial.ReadTimeout = ReadTimeout;
+                serial.WriteTimeout = WriteTimeout;
+                serial.ReadBufferSize = ReadBufferSize;
+                serial.WriteBufferSize = WriteBufferSize;
 
                 serial.ErrorReceived += Serial_ErrorReceived;
 
