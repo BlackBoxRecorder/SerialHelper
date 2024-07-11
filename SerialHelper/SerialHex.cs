@@ -35,6 +35,7 @@ namespace SerialHelper
         public int Timeout { get; set; } = 5000;
         public int ReadBufferSize { get; set; } = 8192;
         public int WriteBufferSize { get; set; } = 8192;
+        public bool LogData { get; set; } = true;
 
         #endregion
 
@@ -82,6 +83,7 @@ namespace SerialHelper
             {
                 await WaitLockAsync();
                 serial.Close();
+                logger.Info("串口已关闭");
             }
             catch (Exception ex)
             {
@@ -134,6 +136,7 @@ namespace SerialHelper
             try
             {
                 serial.DiscardInBuffer();
+                logger.Info("清空接收缓冲区");
             }
             catch (Exception ex)
             {
@@ -146,6 +149,7 @@ namespace SerialHelper
             try
             {
                 serial.DiscardOutBuffer();
+                logger.Info("清空发送缓冲区");
             }
             catch (Exception ex)
             {
@@ -160,6 +164,12 @@ namespace SerialHelper
         private byte[] Send(byte[] data, int recvLength)
         {
             serial.Write(data, 0, data.Length);
+
+            if (LogData)
+            {
+                logger.Trace($"发送数据：{Utils.BytesToHexString(data)}");
+            }
+
             return Receive(recvLength);
         }
 
@@ -175,7 +185,9 @@ namespace SerialHelper
             {
                 if (swTimeout.Elapsed.TotalMilliseconds > Timeout)
                 {
-                    throw new TimeoutException($"读取指定长度的数据超时, {Timeout}ms");
+                    var errmsg = "读取指定长度的数据超时";
+                    logger.Error(errmsg);
+                    throw new TimeoutException($"{errmsg}, {Timeout}ms");
                 }
 
                 if (serial.BytesToRead < 1)
@@ -186,6 +198,11 @@ namespace SerialHelper
                 var bytesRead = serial.Read(recv, totalReadBytes, recvLength - totalReadBytes);
 
                 totalReadBytes += bytesRead;
+            }
+
+            if (LogData)
+            {
+                logger.Trace($"收到数据：{Utils.BytesToHexString(recv)}");
             }
 
             return recv;
@@ -213,11 +230,17 @@ namespace SerialHelper
         void Trace(string message);
         void Debug(string message);
         void Info(string message);
+        void Error(string message);
         void Error(Exception ex, string message);
     }
 
     public class SerialHexLogger : ISerialHexLogger
     {
+        public void Error(string message)
+        {
+            Console.WriteLine($"{DateTime.Now} - {message}");
+        }
+
         public void Error(Exception ex, string message)
         {
             Console.WriteLine($"{DateTime.Now} - {message}");
