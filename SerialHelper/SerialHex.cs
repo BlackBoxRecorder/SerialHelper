@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO.Ports;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -61,11 +60,13 @@ namespace SerialHelper
 
                 serial.Open();
 
+                logger.Info("串口已打开");
+
                 return true;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex.Message, ex);
+                logger.Error(ex, ex.Message);
             }
             finally
             {
@@ -84,7 +85,7 @@ namespace SerialHelper
             }
             catch (Exception ex)
             {
-                logger.LogError(ex.Message, ex);
+                logger.Error(ex, ex.Message);
             }
             finally
             {
@@ -101,7 +102,7 @@ namespace SerialHelper
             }
             catch (Exception ex)
             {
-                logger.LogError(ex.Message, ex);
+                logger.Error(ex, ex.Message);
                 throw;
             }
             finally
@@ -119,7 +120,7 @@ namespace SerialHelper
             }
             catch (Exception ex)
             {
-                logger.LogError(ex.Message, ex);
+                logger.Error(ex, ex.Message);
                 throw;
             }
             finally
@@ -136,7 +137,7 @@ namespace SerialHelper
             }
             catch (Exception ex)
             {
-                logger.LogError("清空接收区缓存异常", ex);
+                logger.Error(ex, "清空接收区缓存异常");
             }
         }
 
@@ -148,7 +149,7 @@ namespace SerialHelper
             }
             catch (Exception ex)
             {
-                logger.LogError("清空发送区缓存异常", ex);
+                logger.Error(ex, "清空发送区缓存异常");
             }
         }
 
@@ -156,13 +157,13 @@ namespace SerialHelper
 
         #region Private
 
-        public byte[] Send(byte[] data, int recvLength)
+        private byte[] Send(byte[] data, int recvLength)
         {
             serial.Write(data, 0, data.Length);
             return Receive(recvLength);
         }
 
-        public byte[] Receive(int recvLength)
+        private byte[] Receive(int recvLength)
         {
             var recv = new byte[recvLength];
 
@@ -201,9 +202,68 @@ namespace SerialHelper
         private void Serial_ErrorReceived(object sender, SerialErrorReceivedEventArgs e)
         {
             SerialError error = e.EventType;
-            logger.LogInfo("SerialPort Error Received: " + error.ToString());
+            logger.Info("SerialPort Error Received: " + error.ToString());
         }
 
         #endregion
+    }
+
+    public interface ISerialHexLogger
+    {
+        void Trace(string message);
+        void Debug(string message);
+        void Info(string message);
+        void Error(Exception ex, string message);
+    }
+
+    public class SerialHexLogger : ISerialHexLogger
+    {
+        public void Error(Exception ex, string message)
+        {
+            Console.WriteLine($"{DateTime.Now} - {message}");
+            Console.WriteLine($"{DateTime.Now} - {ex}");
+        }
+
+        public void Info(string message)
+        {
+            Console.WriteLine($"{DateTime.Now} - {message}");
+        }
+
+        public void Debug(string message)
+        {
+            Console.WriteLine($"{DateTime.Now} - {message}");
+        }
+
+        public void Trace(string message)
+        {
+            Console.WriteLine($"{DateTime.Now} - {message}");
+        }
+    }
+
+    public static class Utils
+    {
+        public static string BytesToHexString(byte[] bytes)
+        {
+            return "0x" + string.Join(" 0x", Array.ConvertAll(bytes, b => b.ToString("X2")));
+        }
+
+        public static byte[] HexStringToBytes(string hexString, string separator)
+        {
+            hexString = hexString.Trim().Replace(separator, "");
+
+            if (hexString.Length % 2 != 0)
+            {
+                throw new ArgumentException("HexString must have an even number of characters.");
+            }
+
+            byte[] byteArray = new byte[hexString.Length / 2];
+
+            for (int i = 0; i < hexString.Length; i += 2)
+            {
+                byteArray[i / 2] = Convert.ToByte(hexString.Substring(i, 2), 16);
+            }
+
+            return byteArray;
+        }
     }
 }
